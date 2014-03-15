@@ -929,7 +929,7 @@ status_t MediaPlayerService::Client::getDuration(int *msec)
 }
 
 status_t MediaPlayerService::Client::setNextPlayer(const sp<IMediaPlayer>& player) {
-    ALOGD("gapless:setNextPlayer");
+    ALOGV("setNextPlayer");
     Mutex::Autolock l(mLock);
     sp<Client> c = static_cast<Client*>(player.get());
     mNextClient = c;
@@ -1099,8 +1099,6 @@ void MediaPlayerService::Client::notify(
         if (msg == MEDIA_PLAYBACK_COMPLETE && client->mNextClient != NULL) {
             if (client->mAudioOutput != NULL)
                 client->mAudioOutput->switchToNextOutput();
-            ALOGD("gapless:current track played back");
-            ALOGD("gapless:try to do a gapless switch to next track");
             client->mNextClient->start();
             client->mNextClient->mClient->notify(MEDIA_INFO, MEDIA_INFO_STARTED_AS_NEXT, 0, obj);
         }
@@ -1588,18 +1586,16 @@ status_t MediaPlayerService::AudioOutput::open(
         if ((mCallbackData == NULL && mCallback != NULL) ||
                 (mCallbackData != NULL && mCallback == NULL)) {
             // recycled track uses callbacks but the caller wants to use writes, or vice versa
-            ALOGD("gapless:can't chain callback and write, track can't be reused");
+            ALOGV("can't chain callback and write");
             reuse = false;
         } else if ((mRecycledTrack->getSampleRate() != sampleRate) ||
                 (mRecycledTrack->channelCount() != (uint32_t)channelCount) ) {
-            ALOGD("gapless:samplerate, channelcount differ: %u/%u Hz, %u/%d ch",
+            ALOGV("samplerate, channelcount differ: %u/%u Hz, %u/%d ch",
                   mRecycledTrack->getSampleRate(), sampleRate,
                   mRecycledTrack->channelCount(), channelCount);
-            ALOGD("gapless:track can't be reused");
             reuse = false;
         } else if (flags != mFlags) {
-            ALOGD("gapless:output flags differ %08x/%08x, track can't be reused",
-                flags, mFlags);
+            ALOGV("output flags differ %08x/%08x", flags, mFlags);
             reuse = false;
         } else if (mRecycledTrack->format() != format) {
             reuse = false;
@@ -1613,7 +1609,7 @@ status_t MediaPlayerService::AudioOutput::open(
     // If we can't recycle and both tracks are offloaded
     // we must close the previous output before opening a new one
     if (bothOffloaded && !reuse) {
-        ALOGD("copl:gapless:both offloaded and not reusing/recycling the track");
+        ALOGV("both offloaded and not recycling");
         deleteRecycledTrack();
     }
 
@@ -1680,7 +1676,7 @@ status_t MediaPlayerService::AudioOutput::open(
         }
 
         if (reuse) {
-            ALOGD("copl:gapless:chaining to next output and reuse/recycling track");
+            ALOGV("chaining to next output and recycling track");
             close();
             mTrack = mRecycledTrack;
             mRecycledTrack.clear();
@@ -1745,7 +1741,7 @@ void MediaPlayerService::AudioOutput::setNextOutput(const sp<AudioOutput>& nextO
 
 
 void MediaPlayerService::AudioOutput::switchToNextOutput() {
-    ALOGD("gapless:switchToNextOutput");
+    ALOGV("switchToNextOutput");
     if (mNextOutput != NULL) {
         if (mCallbackData != NULL) {
             mCallbackData->beginTrackSwitch();

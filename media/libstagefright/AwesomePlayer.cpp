@@ -1196,7 +1196,7 @@ void AwesomePlayer::createAudioPlayer_l()
             cachedDurationUs > AUDIO_SINK_MIN_DEEP_BUFFER_DURATION_US))) {
         flags |= AudioPlayer::ALLOW_DEEP_BUFFERING;
     }
-    if (isStreamingHTTP() || isWidevineContent()) {
+    if (isStreamingHTTP()) {
         flags |= AudioPlayer::IS_STREAMING;
     }
     if (mVideoSource != NULL) {
@@ -1772,8 +1772,7 @@ status_t AwesomePlayer::initAudioDecoder() {
     }
 
     mOffloadAudio = canOffloadStream(meta, (mVideoSource != NULL), vMeta,
-                                     (isStreamingHTTP() || isWidevineContent()),
-                                     streamType);
+                                     isStreamingHTTP(), streamType);
 
 #ifdef QCOM_DIRECTTRACK
     int32_t nchannels = 0;
@@ -1920,8 +1919,7 @@ status_t AwesomePlayer::initAudioDecoder() {
             format->setInt64(kKeyDuration, durationUs);
         }
         mOffloadAudio = canOffloadStream(format, (mVideoSource != NULL), vMeta,
-                                    (isStreamingHTTP() || isWidevineContent()),
-                                     streamType);
+                                     isStreamingHTTP(), streamType);
     }
 
     if (mAudioSource != NULL) {
@@ -3306,22 +3304,6 @@ status_t AwesomePlayer::invoke(const Parcel &request, Parcel *reply) {
 
 bool AwesomePlayer::isStreamingHTTP() const {
     return mCachedSource != NULL || mWVMExtractor != NULL;
-}
-
-bool AwesomePlayer::isWidevineContent() const {
-    if (mWVMExtractor != NULL) {
-        return true;
-    }
-
-    sp<MetaData> fileMeta = mExtractor->getMetaData();
-    const char *containerMime;
-    if (fileMeta != NULL &&
-        fileMeta->findCString(kKeyMIMEType, &containerMime) &&
-        !strcasecmp(containerMime, "video/wvm")) {
-       return true;
-    }
-
-    return false;
 }
 
 status_t AwesomePlayer::dump(int fd, const Vector<String16> &args) const {
